@@ -9,19 +9,13 @@ import pandas as pd
 import psycopg2
 import datetime, re, requests
 from geopy.distance import geodesic
+import json
 
 #app = Flask(__name__)
 
-username = 'rabarry' #add your username here (same as previous postgreSQL)                      
-#host = 'localhost'
-dbname = 'Health_Inspection'
-db = create_engine('postgres://%s@localhost/%s'%(username,dbname))
-con = None
-con = psycopg2.connect(database = dbname, user = username)
 
-#with open('yelp_credentials.json') as creds:    
-#    credentials = json.load(creds)
-#api_key = credentials['api_key']
+
+
 
 def geocode_location(location):
     query = re.sub(r'\s+', '\+', location)
@@ -48,11 +42,29 @@ def get_miles(row, location):
     loc1 = (row['latitude'], row['longitude'])
     return geodesic(loc1, location).miles
 
+def search_yelp(top3):
+    with open('yelp_credentials.json') as creds:    
+        credentials = json.load(creds)
+    api_key = credentials['api_key']
+    headers = {'Authorization': 'Bearer %s' % api_key}
+    url = 'https://api.yelp.com/v3/businesses/search'
+    rest_list = top3
+    responses = list()
+    for restaurant, rest_zip in zip(rest_list['dba'], rest_list['zipcode']): 
+        term = restaurant
+        zipcode = rest_zip
+        params = {'term': restaurant, "location": zipcode}
+        r=requests.get(url, params=params, headers=headers)
+        if r.status_code == 429:
+            break
+        data = json.loads(r.text)
+        responses.append(data)
+        return responses
+
 @app.route('/', methods = ['GET', 'POST'])
 def rest_input():
     today = calc_today()
     return render_template("input.html", today=today)
-
 
 
 @app.route('/output', methods = ['GET', 'POST'])
@@ -73,7 +85,10 @@ def rest_output():
   if (location[1] < (-74.5)) | (location[1] > (-73)):
       return reload_after_error("Uh oh! Looks like that location isn't in New York City. Please try again.")
     #just select predictor data from the SQL database for the restaurant they entered
-  
+  username = 'rabarry'                    
+  dbname = 'Health_Inspection'
+  db = create_engine('postgres://%s@localhost/%s'%(username,dbname))
+  con = psycopg2.connect(database = dbname, user = username)
   query = "SELECT latitude, longitude, dba,boro, last_insp_type, last_insp_num_flags,ny311_complaints,zipcode, cuisine_description,num_years_active, cuisine, income_diversity_ratio,median_income, population,population_density, poverty_rate,public_housing, racial_diversity_index,serious_crime_rate,serious_housing_code_violations, NOW() - last_insp_date AS insp_date_diff  FROM dataforapp WHERE cuisine_reduced= '%s' " %(cuisine) 
   query_results=pd.read_sql_query(query,con)
   query_results['distance'] = query_results.apply(lambda row: get_miles(row,location),axis=1)  
@@ -91,16 +106,12 @@ def rest_output():
   data['result'] = results.tolist()
   data = data[data['result']==1]
   data=data.sort_values('distance')
-  top3 = {'place1name': data['dba'].iloc[0],
-          'place1lat': data['latitude'].iloc[0],
-          'place1long': data['longitude'].iloc[0],
-          'place2name': data['dba'].iloc[1],
-          'place2lat': data['latitude'].iloc[1],
-          'place2long': data['longitude'].iloc[1],
-          'place3name': data['dba'].iloc[2],
-          'place3lat': data['latitude'].iloc[2],
-          'place3long': data['longitude'].iloc[2]}
-  return render_template("output.html", top3=top3)
+  if len(data) >= 3:
+      top3 = data[['dba', 'zipcode']][0:3]
+  else:
+      top3 = data[['dba', 'zipcode']][0:len(data)]
+  #yelp_links = search_yelp(top3)
+  return render_template("output.html", cuisine = cuisine, Dist = Dist, address = Full_Address, top3=top3)
 
 
 if __name__ == '__main__':
