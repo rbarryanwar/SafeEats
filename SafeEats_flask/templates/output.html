@@ -21,7 +21,7 @@
     <div class="text-dark container col-9 mx-auto">
         <!-- Jumbotron Header -->
           <header class="jumbotron jumbotron-fluid my-0 p-4">
-            <h3>You searched for <b>{{cuisine}}</b> restaurants within <b>{{Dist}}</b> miles from <b>{{Full_Address}}</b></h3>
+            <h3>You searched for <b>{{cuisine}}</b> restaurants within <b>{{Dist}}</b> miles from <b>{{address}}</b></h3>
           </header>
 
       <!-- Page Features -->
@@ -31,13 +31,13 @@
 
           <div class="card-header d-flex align-items-center">
 
-            <span class="font-weight-bold text-success mr-auto">{{row['dba']}}</span>
+            <span class="font-weight-bold text-success mr-auto"><b>{{row['dba']}}</b></span>
 
           </div>
           <div class="card-body text-dark text-center d-flex align-content-between flex-wrap">
-            <div class="h5 text-dark card-title"><a href="{{row['biz-url']}}">{{row["zipcode"]}}</a></div>
+            <div class="h5 text-dark card-title">{{row["zipcode"]}} miles away</div>
 
-            <address class="mx-auto w-75 text-dark">Address</address>
+            <address class="mx-auto w-75 text-dark">Rating on yelp.com: </address>
 
             <div class="mx-auto font-weight-bold"><span class="fas fa-mobile-alt">&nbsp;</span> Phone</div>
           </div>

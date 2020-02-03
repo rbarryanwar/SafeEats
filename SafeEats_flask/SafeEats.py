@@ -1,8 +1,7 @@
 #!/usr/bin/python
 import joblib
-from flask import render_template
-from flask import request 
-from SafeEats_flask import app
+from flask import Flask, render_template, flash, request, redirect, url_for
+#from SafeEats_flask import app
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 import pandas as pd
@@ -11,11 +10,7 @@ import datetime, re, requests
 from geopy.distance import geodesic
 import json
 
-#app = Flask(__name__)
-
-
-
-
+app = Flask(__name__)
 
 def geocode_location(location):
     query = re.sub(r'\s+', '\+', location)
