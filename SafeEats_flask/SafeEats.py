@@ -1,7 +1,7 @@
 #!/usr/bin/python
 import joblib
 from flask import Flask, render_template, flash, request, redirect, url_for
-#from SafeEats_flask import app
+from SafeEats_flask import app
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 import pandas as pd
@@ -9,8 +9,11 @@ import psycopg2
 import datetime, re, requests
 from geopy.distance import geodesic
 import json
+from sklearn.preprocessing import MinMaxScaler
 
-app = Flask(__name__)
+
+
+#app = Flask(__name__)
 
 def geocode_location(location):
     query = re.sub(r'\s+', '\+', location)
@@ -43,18 +46,21 @@ def search_yelp(top3):
     api_key = credentials['api_key']
     headers = {'Authorization': 'Bearer %s' % api_key}
     url = 'https://api.yelp.com/v3/businesses/search'
-    rest_list = top3
-    responses = list()
-    for restaurant, rest_zip in zip(rest_list['dba'], rest_list['zipcode']): 
+    cols = ['dba','zip','distance','yelp_name', 'url', 'review_count', 'rating', 'display_phone']
+    top3_yelp = pd.DataFrame(columns = cols)
+    yelp_dict = list()
+    for restaurant, rest_zip, distance in zip(top3['dba'], top3['zipcode'], top3['distance']): 
         term = restaurant
         zipcode = rest_zip
-        params = {'term': restaurant, "location": zipcode}
+        params = {'term': term, "location": zipcode}
         r=requests.get(url, params=params, headers=headers)
         if r.status_code == 429:
             break
-        data = json.loads(r.text)
-        responses.append(data)
-        return responses
+        search_result = json.loads(r.text)
+        business = search_result['businesses'][0]
+        yelp_dict.append(business)
+        top3_yelp = top3_yelp.append(pd.Series([term, zipcode, distance, business['name'], business['url'],  business['review_count'], business['rating'], business['display_phone']], index=top3_yelp.columns), ignore_index= True)
+    return top3_yelp
 
 @app.route('/', methods = ['GET', 'POST'])
 def rest_input():
@@ -84,29 +90,30 @@ def rest_output():
   dbname = 'Health_Inspection'
   db = create_engine('postgres://%s@localhost/%s'%(username,dbname))
   con = psycopg2.connect(database = dbname, user = username)
-  query = "SELECT latitude, longitude, dba,boro, last_insp_type, last_insp_num_flags,ny311_complaints,zipcode, cuisine_description,num_years_active, cuisine, income_diversity_ratio,median_income, population,population_density, poverty_rate,public_housing, racial_diversity_index,serious_crime_rate,serious_housing_code_violations, NOW() - last_insp_date AS insp_date_diff  FROM dataforapp WHERE cuisine_reduced= '%s' " %(cuisine) 
+  query = "SELECT latitude, longitude, dba,boro, last_insp_type, last_insp_num_flags,ny311_complaints,zipcode, cuisine_description,num_years_active, cuisine, avg_num_critical_flags_per_year, population,population_density, serious_housing_code_violations  FROM dataforapp WHERE cuisine_reduced= '%s' " %(cuisine) 
   query_results=pd.read_sql_query(query,con)
   query_results['distance'] = query_results.apply(lambda row: get_miles(row,location),axis=1)  
   data = query_results[query_results['distance']< Dist]
-  data['insp_date_diff2'] = (data['insp_date_diff'].astype(str)).apply(lambda x: x.split('d')[0])
-  data4model = data[['insp_date_diff2', 'ny311_complaints',
+  data4model = data[['avg_num_critical_flags_per_year', 'ny311_complaints',
        'last_insp_type', 'last_insp_num_flags',
-       'boro', 'num_years_active', 'cuisine', 'income_diversity_ratio', 'median_income',
-       'population', 'population_density',
-       'poverty_rate', 'public_housing',
-       'racial_diversity_index', 'serious_crime_rate',
-       'serious_housing_code_violations']]
-  knn_from_pickle = joblib.load('knn_model.pkl')
-  results = knn_from_pickle.predict(data4model)
+       'boro', 'num_years_active', 'cuisine', 
+       'population', 'population_density','serious_housing_code_violations']]
+  scaler = MinMaxScaler()
+  scaler.fit(data4model)
+  data4model = scaler.transform(data4model)
+  model_from_pickle = joblib.load('final_model.pkl')
+  results = model_from_pickle.predict(data4model)
   data['result'] = results.tolist()
   data = data[data['result']==1]
   data=data.sort_values('distance')
   if len(data) >= 3:
-      top3 = data[['dba', 'zipcode']][0:3]
+      top3 = data[['dba', 'zipcode', 'distance']][0:3]
   else:
-      top3 = data[['dba', 'zipcode']][0:len(data)]
-  #yelp_links = search_yelp(top3)
-  return render_template("output.html", cuisine = cuisine, Dist = Dist, address = Full_Address, top3=top3)
+      top3 = data[['dba', 'zipcode', 'distance']][0:len(data)]
+  top3['zipcode'] = top3['zipcode'].astype(int)
+  yelp_output = search_yelp(top3)
+  yelp_output['distance'] = yelp_output['distance'].round(2)
+  return render_template("output.html", cuisine = cuisine, Dist = Dist, address = Full_Address, yelp_output = yelp_output)
 
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@
     <title>Results page for SafeEats</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="../static/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 
   </head>
 
@@ -25,38 +25,28 @@
           </header>
 
       <!-- Page Features -->
-      <div class="mt-5 card-deck">
-        {% for index, row in top3.iterrows() %}
-          <div class="card bg-light text-dark  mx-auto mb-5 col=3" style="min-width:15rem;max-width:15rem;">
-
-          <div class="card-header d-flex align-items-center">
-
-            <span class="font-weight-bold text-success mr-auto"><b>{{row['dba']}}</b></span>
-
+      <div class="container">
+        {% for index, row in yelp_output.iterrows() %}
+      <div class="card-deck border-primary mb-3">
+        <div class = "card text-white bg-secondary mb-3" style="max-width: 20rem;">
+          <h3 class = "card-header">{{row['dba']}}</h3>
+          <div class = "card-body">
+            <h4 class="card-title"> {{row['distance']}} miles from you </h4>
+            <h4 class="card-text"> {{row['rating']}} star rating on yelp </h4>
+            <h4 class="card-text"> {{row['display_phone']}}</h4>
+            <a href="{{row['url']}}" class="btn btn-primary">Check yelp.com!</a>
           </div>
-          <div class="card-body text-dark text-center d-flex align-content-between flex-wrap">
-            <div class="h5 text-dark card-title">{{row["zipcode"]}} miles away</div>
-
-            <address class="mx-auto w-75 text-dark">Rating on yelp.com: </address>
-
-            <div class="mx-auto font-weight-bold"><span class="fas fa-mobile-alt">&nbsp;</span> Phone</div>
-          </div>
-          <div class="card-footer text-center">
-            <a role="button" class="w-100 mx-auto btn btn-primary" href="{{row['biz-url']}}"><strong>Rating</strong><br/>Number of ratings on yelp.com</a>
-          </div>
-            </div>
+        </div>
+      </div>
         {% endfor %}
+      
       </div>
-
-      <div class="mt-3" id='expanded_details'></div>
-      </div>
-
 
       <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
       <script src="../static/js/bootstrap.min.js"></script>
 
 
-     </div><!-- /.container -->
+
 
     <!-- Bootstrap core JavaScript
     ================================================== -->
@@ -70,3 +60,6 @@
 
   </body>
 </html>
+
+
+
