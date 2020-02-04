@@ -12,7 +12,6 @@ import json
 from sklearn.preprocessing import MinMaxScaler
 
 
-
 #app = Flask(__name__)
 
 def geocode_location(location):
@@ -86,10 +85,11 @@ def rest_output():
   if (location[1] < (-74.5)) | (location[1] > (-73)):
       return reload_after_error("Uh oh! Looks like that location isn't in New York City. Please try again.")
     #just select predictor data from the SQL database for the restaurant they entered
-  username = 'rabarry'                    
+  username = 'ubuntu'                    
   dbname = 'Health_Inspection'
   db = create_engine('postgres://%s@localhost/%s'%(username,dbname))
-  con = psycopg2.connect(database = dbname, user = username)
+  con=None
+  con = psycopg2.connect(database = dbname, user = username, host='localhost')
   query = "SELECT latitude, longitude, dba,boro, last_insp_type, last_insp_num_flags,ny311_complaints,zipcode, cuisine_description,num_years_active, cuisine, avg_num_critical_flags_per_year, population,population_density, serious_housing_code_violations  FROM dataforapp WHERE cuisine_reduced= '%s' " %(cuisine) 
   query_results=pd.read_sql_query(query,con)
   query_results['distance'] = query_results.apply(lambda row: get_miles(row,location),axis=1)  
