@@ -12,8 +12,6 @@ import json
 from sklearn.preprocessing import MinMaxScaler
 
 
-#app = Flask(__name__)
-
 def geocode_location(location):
     query = re.sub(r'\s+', '\+', location)
     request = f'https://nominatim.openstreetmap.org/search?q={query}&format=json'
@@ -74,6 +72,12 @@ def rest_output():
   Street = request.form.get('inputAddress')
   zip_code = request.form.get('inputZip')
   Dist = int(request.form.get('inputDist')) 
+  if Street == '':
+      return reload_after_error("Uh oh! You must enter an address")
+  if zip_code == '':
+      return reload_after_error("Uh oh! You must enter a zip code")
+  if Dist =='':
+      return reload_after_error("Uh oh! You must enter a distance")
   Full_Address = Street + ', New York City, New York ' + zip_code
   if zip_code.startswith('1') == False:
       return reload_after_error("Uh oh! Looks like that location isn't in New York City. Please try again.")
@@ -84,10 +88,8 @@ def rest_output():
       return reload_after_error("Uh oh! Looks like that location isn't in New York City. Please try again.")
   if (location[1] < (-74.5)) | (location[1] > (-73)):
       return reload_after_error("Uh oh! Looks like that location isn't in New York City. Please try again.")
-    #just select predictor data from the SQL database for the restaurant they entered
   username = 'ubuntu'                    
   dbname = 'Health_Inspection'
-  db = create_engine('postgres://%s@localhost/%s'%(username,dbname))
   con=None
   con = psycopg2.connect(database = dbname, user = username, host='localhost')
   query = "SELECT latitude, longitude, dba,boro, last_insp_type, last_insp_num_flags,ny311_complaints,zipcode, cuisine_description,num_years_active, cuisine, avg_num_critical_flags_per_year, population,population_density, serious_housing_code_violations  FROM dataforapp WHERE cuisine_reduced= '%s' " %(cuisine) 

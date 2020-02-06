@@ -28,7 +28,7 @@
       <!-- Page Features -->
       <div class="container">
         {% for index, row in yelp_output.iterrows() %}
-      <div class="card-deck border-primary mb-3">
+      <div class="card-deck border-primary mb-3"> 
         <div class = "card text-white bg-secondary mb-3" style="max-width: 20rem;">
           <h3 class = "card-header">{{row['dba']}}</h3>
           <div class = "card-body">
@@ -40,7 +40,7 @@
         </div>
       </div>
         {% endfor %}
-      
+      <a href = "https://github.com/rbarryanwar/SafeEats" class = "btn btn-success"> Check out my Github repository!</a>
       </div>
 
       <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
