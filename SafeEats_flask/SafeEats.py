@@ -54,9 +54,12 @@ def search_yelp(top3):
         if r.status_code == 429:
             break
         search_result = json.loads(r.text)
-        business = search_result['businesses'][0]
-        yelp_dict.append(business)
-        top3_yelp = top3_yelp.append(pd.Series([term, zipcode, distance, business['name'], business['url'],  business['review_count'], business['rating'], business['display_phone']], index=top3_yelp.columns), ignore_index= True)
+        if search_result['total']== 0:
+            top3_yelp = top3_yelp.append(pd.Series([term, zipcode, distance, 'YELP ERROR!', 'YELP ERROR!',  'YELP ERROR!', 'YELP ERROR!', 'YELP ERROR!'], index=top3_yelp.columns), ignore_index= True)
+        else:
+            business = search_result['businesses'][0]
+            yelp_dict.append(business)
+            top3_yelp = top3_yelp.append(pd.Series([term, zipcode, distance, business['name'], business['url'],  business['review_count'], business['rating'], business['display_phone']], index=top3_yelp.columns), ignore_index= True)
     return top3_yelp
 
 @app.route('/', methods = ['GET', 'POST'])
