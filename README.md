@@ -1,3 +1,5 @@
 # SafeEats
 
-Coming Soon: My Insight Project
+Find restaurants in NYC predicted to have few health code violations!
+
+http://safeeats.xyz
